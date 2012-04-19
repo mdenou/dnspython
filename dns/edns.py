@@ -15,7 +15,17 @@
 
 """EDNS Options"""
 
+import struct
+
+import dns.entropy
+
+LLQ = 1
+UL = 2
 NSID = 3
+
+LLQ_ERROR_NOERROR, LLQ_ERROR_SERVFULL, LLQ_ERROR_STATIC, LLQ_ERROR_FORMAT, \
+    LLQ_ERROR_NOSUCH_LLQ, LLQ_ERROR_BADVER, LLQ_ERROR_UNKNOWN = range(0,7)
+LLQ_OPCODE_SETUP, LLQ_OPCODE_REFRESH, LLQ_OPCODE_EVENT = range(1,4)
 
 class Option(object):
     """Base class for all EDNS option types.
@@ -116,7 +126,64 @@ class GenericOption(Option):
     def _cmp(self, other):
 	return cmp(self.data, other.data)
 
+class LLQOption(Option):
+    """Long Lived Query
+    """
+
+    def __init__(self,
+                 version = 1,
+                 opcode = LLQ_OPCODE_SETUP,
+                 errorcode = LLQ_ERROR_NOERROR,
+                 queryid = dns.entropy.between(0, 18446744073709551615L),
+                 leaselife = 0):
+        self.otype = LLQ
+        self.version = version
+        self.opcode = opcode
+        self.errorcode = errorcode
+        self.queryid = queryid
+        self.leaselife = leaselife
+
+    def to_wire(self, file):
+        wire = struct.pack('!HHHQL', self.version, self.opcode, \
+                           self.errorcode, self.queryid, self.leaselife)
+        file.write(wire)
+
+    def from_wire(cls, otype, wire, current, olen):
+        (version, opcode, errorcode, queryid, leaselife) = \
+        struct.unpack('!HHHQL', wire[current:current + olen])
+        return cls(version, opcode, errorcode, queryid, leaselife)
+
+    from_wire = classmethod(from_wire)
+
+    def _cmp(self, other):
+        return cmp( (self.otype, self.version, self.opcode, self.errorcode,
+                     self.queryid, self.leaselife),
+                     (other.otype, other.version, other.opcode, other.errorcode,
+                      other.queryid, other.leaselife) )
+
+class ULOption(Option):
+    """Update Lease
+    """
+
+    def __init__(self, leaselength = 0):
+        self.otype = UL
+        self.leaselength = leaselength
+
+    def to_wire(self, file):
+        file.write(struct.pack('!L', self.leaselength))
+
+    def from_wire(cls, otype, wire, current, olen):
+        (leaselength,) = struct.unpack('!L', wire[current:current + olen])
+        return cls(leaselength)
+
+    from_wire = classmethod(from_wire)
+
+    def _cmp(self, other):
+        return cmp(self.leaselength, other.leaselength)
+
 _type_to_class = {
+    LLQ: LLQOption,
+    UL: ULOption
 }
 
 def get_option_class(otype):
