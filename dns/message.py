@@ -222,6 +222,10 @@ class Message(object):
         print >> s, ';ADDITIONAL'
         for rrset in self.additional:
             print >> s, rrset.to_text(origin, relativize, **kw)
+        if edns >= 0:
+            print >> s, ';EDNS OPTIONS'
+            for option in self.options:
+                print >> s, option.to_text()
         #
         # We strip off the final \n so the caller can print the result without
         # doing weird things to get around eccentricities in Python print
