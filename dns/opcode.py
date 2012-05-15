@@ -102,3 +102,15 @@ def is_update(flags):
     if (from_flags(flags) == UPDATE):
         return True
     return False
+    
+def is_query(flags):
+    """True if the opcode in flags is QUERY.
+
+    @param flags: DNS flags
+    @type flags: int
+    @rtype: bool
+    """
+    
+    if (from_flags(flags) == QUERY):
+        return True
+    return False    
