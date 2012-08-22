@@ -165,21 +165,22 @@ class ULOption(Option):
     """Update Lease
     """
 
-    def __init__(self, leaselength = 0):
+    def __init__(self, leaselength = 0, ulid = 0):
         self.otype = UL
         self.leaselength = leaselength
+	self.ulid = ulid
 
     def to_wire(self, file):
-        file.write(struct.pack('!L', self.leaselength))
+        file.write(struct.pack('!QL', self.ulid, self.leaselength))
 
     def from_wire(cls, otype, wire, current, olen):
-        (leaselength,) = struct.unpack('!L', wire[current:current + olen])
-        return cls(leaselength)
+        (ulid, leaselength,) = struct.unpack('!QL', wire[current:current + olen])
+        return cls(leaselength, ulid)
 
     from_wire = classmethod(from_wire)
 
     def _cmp(self, other):
-        return cmp(self.leaselength, other.leaselength)
+        return cmp((self.leaselength, self.ulid), (other.leaselength, other.ulid))
 
 _type_to_class = {
     LLQ: LLQOption,
