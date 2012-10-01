@@ -174,7 +174,7 @@ class ULOption(Option):
         file.write(struct.pack('!QL', self.ulid, self.leaselength))
 
     def from_wire(cls, otype, wire, current, olen):
-        (ulid, leaselength,) = struct.unpack('!QL', wire[current:current + olen])
+        (ulid, leaselength) = struct.unpack('!QL', wire[current:current + olen])
         return cls(leaselength, ulid)
 
     from_wire = classmethod(from_wire)
